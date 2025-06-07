@@ -1,118 +1,137 @@
-let code = "";
-let device = "PC";
-let player = { x: 0, y: 0 };
+// === Labyrinth Tycoon - main.js ===
+
+// --- DOM Elemente ---
+const screens = {
+  menu: document.getElementById("menu"),
+  game: document.getElementById("game"),
+  stats: document.getElementById("stats"),
+  builder: document.getElementById("builder"),
+};
+
+const mazeContainer = document.getElementById("mazeContainer");
+const builderContainer = document.getElementById("builderContainer");
+const scoreDisplay = document.getElementById("scoreDisplay");
+const deviceSelect = document.getElementById("deviceSelect");
+
+// --- Variablen ---
 let maze = [];
-let mazeSize = 5;
+let mazeSize = 5; // Startgröße
+let player = { x: 0, y: 0 };
+let endPos = { x: 0, y: 0 };
 let score = 0;
 let solved = 0;
 let bonusFails = 0;
 let moveCount = 0;
-let startTime;
-let inBonus = false;
-let bonusMode = "";
+let device = "PC";
+
 let builderMode = false;
 let builderData = [];
 let builderStart = null;
 let builderEnd = null;
 
-const screens = {
-  code: document.getElementById("codeScreen"),
-  menu: document.getElementById("mainMenu"),
-  game: document.getElementById("gameScreen"),
-  stats: document.getElementById("statsScreen"),
-  builder: document.getElementById("builderScreen"),
-};
-
+// --- Helfer-Funktionen ---
 function showScreen(name) {
   Object.values(screens).forEach(s => s.classList.add("hidden"));
   screens[name].classList.remove("hidden");
 }
 
-function enterCode() {
-  const input = document.getElementById("codeInput").value.trim();
-  if (!input.match(/^LAB-\w{4}-\w{4}$/)) {
-    alert("Ungültiger Codeformat. Beispiel: LAB-1234-ABCD");
-    return;
-  }
-  code = input;
-  loadData();
-  document.getElementById("codeDisplay").innerText = code;
-  showScreen("menu");
-}
-
-function loadData() {
-  const saved = JSON.parse(localStorage.getItem(code)) || {};
-  score = saved.score || 0;
-  device = saved.device || "PC";
-  solved = saved.solved || 0;
-  bonusFails = saved.bonusFails || 0;
-  moveCount = saved.moveCount || 0;
-}
-
 function saveData() {
-  localStorage.setItem(code, JSON.stringify({
-    score, device, solved, bonusFails, moveCount
+  localStorage.setItem("labyrinthTycoonData", JSON.stringify({
+    score, solved, bonusFails, moveCount, device, mazeSize
   }));
 }
 
-function startGame() {
-  mazeSize = getMazeSizeFromScore(score);
-  generateMaze(mazeSize);
-  renderMaze();
-  player.x = 0;
-  player.y = 0;
-  startTime = Date.now();
-  inBonus = isBonusLevel();
-  bonusMode = inBonus ? randomBonusMode() : "";
-  document.getElementById("bonusInfo").innerText = inBonus ? `BONUS: ${bonusMode}` : "";
-  showScreen("game");
+function loadData() {
+  const data = localStorage.getItem("labyrinthTycoonData");
+  if (data) {
+    const obj = JSON.parse(data);
+    score = obj.score || 0;
+    solved = obj.solved || 0;
+    bonusFails = obj.bonusFails || 0;
+    moveCount = obj.moveCount || 0;
+    device = obj.device || "PC";
+    mazeSize = obj.mazeSize || 5;
+    deviceSelect.value = device;
+  }
+  updateScore();
 }
 
-function getMazeSizeFromScore(score) {
-  if (score >= 1000) return 25;
-  if (score >= 500) return 20;
-  if (score >= 150) return 15;
-  if (score >= 50) return 10;
-  if (score >= 10) return 7;
-  return 5;
+function updateScore() {
+  scoreDisplay.textContent = score;
 }
+
+function isInside(x, y) {
+  return x >= 0 && y >= 0 && x < mazeSize && y < mazeSize;
+}
+
+// --- Maze-Generierung (Random DFS) ---
 function generateMaze(size) {
-  maze = Array.from({ length: size }, () =>
-    Array.from({ length: size }, () => (Math.random() < 0.25 ? 1 : 0))
-  );
-  maze[0][0] = 0; // Start
-  maze[size - 1][size - 1] = 0; // Ziel
-}
+  mazeSize = size;
+  maze = Array.from({ length: size }, () => Array(size).fill(1)); // 1 = Wand, 0 = Weg
 
-function renderMaze() {
-  const container = document.getElementById("mazeContainer");
-  container.innerHTML = "";
-  container.style.gridTemplateColumns = `repeat(${mazeSize}, 1fr)`;
-  for (let y = 0; y < mazeSize; y++) {
-    for (let x = 0; x < mazeSize; x++) {
-      const cell = document.createElement("div");
-      cell.className = "cell";
-      if (maze[y][x] === 1) cell.classList.add("wall");
-      if (x === player.x && y === player.y) cell.classList.add("player");
-      if (x === mazeSize - 1 && y === mazeSize - 1) cell.classList.add("end");
-      container.appendChild(cell);
+  // Start und Ende zufällig (Start links oben, Ende rechts unten)
+  player = { x: 0, y: 0 };
+  maze[0][0] = 0;
+  endPos = { x: size - 1, y: size - 1 };
+  maze[endPos.y][endPos.x] = 0;
+
+  // DFS Stack
+  const stack = [];
+  stack.push({ x: 0, y: 0 });
+
+  while (stack.length) {
+    const current = stack[stack.length - 1];
+    const neighbors = [];
+
+    // Nachbarn 2 Schritte weg prüfen (N, S, O, W)
+    const directions = [
+      { x: 0, y: -2 },
+      { x: 2, y: 0 },
+      { x: 0, y: 2 },
+      { x: -2, y: 0 },
+    ];
+
+    for (const dir of directions) {
+      const nx = current.x + dir.x;
+      const ny = current.y + dir.y;
+      if (isInside(nx, ny) && maze[ny][nx] === 1) {
+        neighbors.push({ x: nx, y: ny, betweenX: current.x + dir.x / 2, betweenY: current.y + dir.y / 2 });
+      }
+    }
+
+    if (neighbors.length) {
+      const chosen = neighbors[Math.floor(Math.random() * neighbors.length)];
+      maze[chosen.y][chosen.x] = 0;
+      maze[chosen.betweenY][chosen.betweenX] = 0;
+      stack.push({ x: chosen.x, y: chosen.y });
+    } else {
+      stack.pop();
     }
   }
 }
 
-function movePlayer(dx, dy) {
-  if (inBonus && bonusMode === "reverse") {
-    dx *= -1;
-    dy *= -1;
-  }
+// --- Maze rendern ---
+function renderMaze() {
+  mazeContainer.style.gridTemplateColumns = `repeat(${mazeSize}, 1fr)`;
+  mazeContainer.innerHTML = "";
 
+  for (let y = 0; y < mazeSize; y++) {
+    for (let x = 0; x < mazeSize; x++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      if (maze[y][x] === 1) cell.classList.add("wall");
+      if (player.x === x && player.y === y) cell.classList.add("player");
+      if (endPos.x === x && endPos.y === y) cell.classList.add("end");
+      mazeContainer.appendChild(cell);
+    }
+  }
+}
+
+// --- Spieler bewegen ---
+function movePlayer(dx, dy) {
   const nx = player.x + dx;
   const ny = player.y + dy;
-  if (
-    nx >= 0 && ny >= 0 &&
-    nx < mazeSize && ny < mazeSize &&
-    maze[ny][nx] === 0
-  ) {
+  if (isInside(nx, ny) && maze[ny][nx] === 0) {
     player.x = nx;
     player.y = ny;
     moveCount++;
@@ -122,55 +141,50 @@ function movePlayer(dx, dy) {
 }
 
 function checkWin() {
-  if (player.x === mazeSize - 1 && player.y === mazeSize - 1) {
-    const timeTaken = (Date.now() - startTime) / 1000;
-    if (inBonus && bonusMode === "invisible" && !visiblePhase) {
-      bonusFails++;
-    } else {
-      score++;
-      solved++;
-      saveData();
+  if (player.x === endPos.x && player.y === endPos.y) {
+    score++;
+    solved++;
+    updateScore();
+    saveData();
+    alert("Du hast das Labyrinth geschafft!");
+    adjustMazeSize();
+    startGame();
+  }
+}
+
+// --- Größe anpassen bei Meilensteinen ---
+function adjustMazeSize() {
+  const milestones = [10, 50, 150, 500, 1000];
+  for (let i = milestones.length - 1; i >= 0; i--) {
+    if (score >= milestones[i]) {
+      mazeSize = 5 + i * 5;
+      break;
     }
-    setTimeout(startGame, 800);
   }
 }
 
-function isBonusLevel() {
-  return score % 5 === 0 && score !== 0;
+// --- Spiel starten ---
+function startGame() {
+  builderMode = false;
+  generateMaze(mazeSize);
+  player = { x: 0, y: 0 };
+  moveCount = 0;
+  showScreen("game");
+  renderMaze();
+  updateScore();
 }
 
-function randomBonusMode() {
-  const modes = ["reverse", "blur", "invisible"];
-  return modes[Math.floor(Math.random() * modes.length)];
-}
+// --- Touch Steuerung ---
+let touchStartX = null, touchStartY = null;
 
-// Bonus: Schwarzbild / sichtbar im Wechsel
-let visiblePhase = true;
-setInterval(() => {
-  if (inBonus && bonusMode === "invisible") {
-    visiblePhase = !visiblePhase;
-    document.getElementById("mazeContainer").style.visibility = visiblePhase ? "visible" : "hidden";
-  }
-}, 5000);
-
-// Tastatursteuerung
-document.addEventListener("keydown", e => {
-  if (!screens.game.classList.contains("hidden")) {
-    if (["ArrowUp", "w"].includes(e.key)) movePlayer(0, -1);
-    if (["ArrowDown", "s"].includes(e.key)) movePlayer(0, 1);
-    if (["ArrowLeft", "a"].includes(e.key)) movePlayer(-1, 0);
-    if (["ArrowRight", "d"].includes(e.key)) movePlayer(1, 0);
-  }
-});
-// Touchsteuerung
-let touchStartX, touchStartY;
-document.addEventListener("touchstart", e => {
+document.addEventListener("touchstart", (e) => {
   if (!screens.game.classList.contains("hidden")) {
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
   }
 });
-document.addEventListener("touchend", e => {
+
+document.addEventListener("touchend", (e) => {
   if (!screens.game.classList.contains("hidden")) {
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = e.changedTouches[0].clientY - touchStartY;
@@ -182,90 +196,43 @@ document.addEventListener("touchend", e => {
   }
 });
 
-// Statistiken anzeigen
+// --- Tastatursteuerung ---
+document.addEventListener("keydown", (e) => {
+  if (!screens.game.classList.contains("hidden") && device === "PC") {
+    switch (e.key) {
+      case "ArrowUp": movePlayer(0, -1); break;
+      case "ArrowDown": movePlayer(0, 1); break;
+      case "ArrowLeft": movePlayer(-1, 0);break;
+      case "ArrowRight": movePlayer(1, 0); break;
+    }
+  }
+});
+
+// --- Statistiken anzeigen ---
 function showStats() {
-  document.getElementById("statScore").innerText = score;
-  document.getElementById("statSolved").innerText = solved;
-  document.getElementById("statFails").innerText = bonusFails;
-  document.getElementById("statMoves").innerText = moveCount;
-  document.getElementById("statDevice").innerText = device;
+  document.getElementById("statScore").textContent = score;
+  document.getElementById("statSolved").textContent = solved;
+  document.getElementById("statFails").textContent = bonusFails;
+  document.getElementById("statMoves").textContent = moveCount;
+  document.getElementById("statDevice").textContent = device;
   showScreen("stats");
 }
 
-// Geräteeinstellung
-function setDevice(newDevice) {
-  device = newDevice;
+// --- Gerät ändern ---
+deviceSelect.addEventListener("change", () => {
+  device = deviceSelect.value;
   saveData();
-  alert(`Gerät auf ${newDevice} gesetzt`);
-}
+});
 
-// Maze-Baumeister
-function openBuilder() {
-  builderMode = true;
-  mazeSize = 10;
-  builderData = Array.from({ length: mazeSize }, () => Array(mazeSize).fill(0));
-  builderStart = null;
-  builderEnd = null;
-  renderBuilder();
-  showScreen("builder");
-}
-
-function renderBuilder() {
-  const container = document.getElementById("builderContainer");
-  container.innerHTML = "";
-  container.style.gridTemplateColumns = `repeat(${mazeSize}, 1fr)`;
-  for (let y = 0; y < mazeSize; y++) {
-    for (let x = 0; x < mazeSize; x++) {
-      const cell = document.createElement("div");
-      cell.className = "cell";
-      if (builderData[y][x] === 1) cell.classList.add("wall");
-      if (builderStart?.x === x && builderStart?.y === y) cell.classList.add("player");
-      if (builderEnd?.x === x && builderEnd?.y === y) cell.classList.add("end");
-      cell.onclick = () => toggleBuilderCell(x, y);
-      container.appendChild(cell);
-    }
-  }
-}
-
-function toggleBuilderCell(x, y) {
-  if (!builderStart) {
-    builderStart = { x, y };
-  } else if (!builderEnd) {
-    builderEnd = { x, y };
-  } else {
-    builderData[y][x] = builderData[y][x] === 1 ? 0 : 1;
-  }
-  renderBuilder();
-}
-function startBuilderMaze() {
-  if (!builderStart || !builderEnd) {
-    alert("Bitte Start- und Endpunkt setzen!");
-    return;
-  }
-  maze = builderData;
-  player = { x: builderStart.x, y: builderStart.y };
-  mazeSize = builderData.length;
-  inBonus = false;
-  bonusMode = null;
-  startTime = Date.now();
-  showScreen("game");
-  renderMaze();
-}
-
-document.getElementById("deviceSelect").addEventListener("change", e => {
-  setDevice(e.target.value);
+// --- Buttons Events ---
+document.getElementById("startGameBtn").addEventListener("click", () => {
+  adjustMazeSize();
+  startGame();
 });
 
 document.getElementById("backToMenu").addEventListener("click", () => {
   showScreen("menu");
-});
-
-document.getElementById("startBuilderBtn").addEventListener("click", () => {
-  openBuilder();
-});
-
-document.getElementById("startGameBtn").addEventListener("click", () => {
-  startGame();
+  saveData();
 });
 
 document.getElementById("statsBtn").addEventListener("click", () => {
@@ -276,24 +243,60 @@ document.getElementById("backFromStats").addEventListener("click", () => {
   showScreen("menu");
 });
 
-document.getElementById("startBuilderGame").addEventListener("click", () => {
-  startBuilderMaze();
+document.getElementById("startBuilderBtn").addEventListener("click", () => {
+  builderMode = true;
+  mazeSize = 5;
+  builderData = Array.from({ length: mazeSize }, () => Array(mazeSize).fill(1));
+  builderStart = { x: 0, y: 0 };
+  builderEnd = { x: mazeSize - 1, y: mazeSize - 1 };
+  renderBuilder();
+  showScreen("builder");
 });
 
 document.getElementById("backFromBuilder").addEventListener("click", () => {
   showScreen("menu");
 });
 
-// Initial starten mit Login-Code
-if (!localStorage.getItem("playerCode")) {
-  const entered = prompt("Gib deinen Spieler-Code ein:");
-  if (entered) {
-    localStorage.setItem("playerCode", entered);
-    loadData();
-  } else {
-    alert("Spieler-Code erforderlich!");
-    location.reload();
+document.getElementById("startBuilderGame").addEventListener("click", () => {
+  // Übernehme gebautes Maze ins Spiel
+  maze = builderData.map(row => row.slice());
+  mazeSize = maze.length;
+  player = { ...builderStart };
+  endPos = { ...builderEnd };
+  score = 0;
+  solved = 0;
+  moveCount = 0;
+  bonusFails = 0;
+  updateScore();
+  showScreen("game");
+  renderMaze();
+  saveData();
+});
+
+// --- Maze-Baumeister rendern ---
+function renderBuilder() {
+  builderContainer.style.gridTemplateColumns = `repeat(${mazeSize}, 1fr)`;
+  builderContainer.innerHTML = "";
+
+  for (let y = 0; y < mazeSize; y++) {
+    for (let x = 0; x < mazeSize; x++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      if (builderData[y][x] === 1) cell.classList.add("wall");
+      if (builderStart.x === x && builderStart.y === y) cell.textContent = "S";
+      else if (builderEnd.x === x && builderEnd.y === y) cell.textContent = "E";
+      cell.style.userSelect = "none";
+      cell.addEventListener("click", () => {
+        if (x === builderStart.x && y === builderStart.y) return; // Start bleibt Start
+        if (x === builderEnd.x && y === builderEnd.y) return;     // Ende bleibt Ende
+        builderData[y][x] = builderData[y][x] === 1 ? 0 : 1;
+        renderBuilder();
+      });
+      builderContainer.appendChild(cell);
+    }
   }
-} else {
-  loadData();
 }
+
+// --- Initialisierung ---
+loadData();
+showScreen("menu");

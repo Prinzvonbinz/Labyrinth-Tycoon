@@ -1,119 +1,141 @@
-// === Labyrinth Tycoon - main.js ===
-
-// --- DOM Elemente ---
-const screens = {
-  menu: document.getElementById("menu"),
-  game: document.getElementById("game"),
-  stats: document.getElementById("stats"),
-  builder: document.getElementById("builder"),
-};
-
-const mazeContainer = document.getElementById("mazeContainer");
-const builderContainer = document.getElementById("builderContainer");
-const scoreDisplay = document.getElementById("scoreDisplay");
-const deviceSelect = document.getElementById("deviceSelect");
-
 // --- Variablen ---
 let maze = [];
-let mazeSize = 5; // Startgröße
+let mazeSize = 5;
 let player = { x: 0, y: 0 };
-let endPos = { x: 0, y: 0 };
+let endPos = { x: mazeSize - 1, y: mazeSize - 1 };
 let score = 0;
 let solved = 0;
 let bonusFails = 0;
 let moveCount = 0;
-let device = "PC";
-
+let device = "auto";
 let builderMode = false;
 let builderData = [];
-let builderStart = null;
-let builderEnd = null;
+let builderStart = { x: 0, y: 0 };
+let builderEnd = { x: 4, y: 4 };
 
-// --- Helfer-Funktionen ---
+const menuScreen = document.getElementById("menu");
+const gameScreen = document.getElementById("game");
+const statsScreen = document.getElementById("stats");
+const builderScreen = document.getElementById("builder");
+
+const mazeContainer = document.getElementById("mazeContainer");
+const builderContainer = document.getElementById("builderContainer");
+
+const scoreDisplay = document.getElementById("scoreDisplay");
+const deviceSelect = document.getElementById("deviceSelect");
+const accountInput = document.getElementById("accountCode");
+
+// --- Hilfsfunktionen ---
 function showScreen(name) {
-  Object.values(screens).forEach(s => s.classList.add("hidden"));
-  screens[name].classList.remove("hidden");
+  menuScreen.classList.add("hidden");
+  gameScreen.classList.add("hidden");
+  statsScreen.classList.add("hidden");
+  builderScreen.classList.add("hidden");
+
+  if (name === "menu") menuScreen.classList.remove("hidden");
+  else if (name === "game") gameScreen.classList.remove("hidden");
+  else if (name === "stats") statsScreen.classList.remove("hidden");
+  else if (name === "builder") builderScreen.classList.remove("hidden");
 }
 
 function saveData() {
-  localStorage.setItem("labyrinthTycoonData", JSON.stringify({
-    score, solved, bonusFails, moveCount, device, mazeSize
-  }));
+  const code = accountInput.value.trim();
+  if (!code) return;
+  const data = {
+    maze,
+    mazeSize,
+    player,
+    endPos,
+    score,
+    solved,
+    bonusFails,
+    moveCount,
+    device,
+  };
+  localStorage.setItem("labyrinthTycoon_" + code, JSON.stringify(data));
 }
 
 function loadData() {
-  const data = localStorage.getItem("labyrinthTycoonData");
-  if (data) {
-    const obj = JSON.parse(data);
-    score = obj.score || 0;
-    solved = obj.solved || 0;
-    bonusFails = obj.bonusFails || 0;
-    moveCount = obj.moveCount || 0;
-    device = obj.device || "PC";
-    mazeSize = obj.mazeSize || 5;
+  const code = accountInput.value.trim();
+  if (!code) return false;
+  const dataStr = localStorage.getItem("labyrinthTycoon_" + code);
+  if (!dataStr) return false;
+  try {
+    const data = JSON.parse(dataStr);
+    maze = data.maze;
+    mazeSize = data.mazeSize;
+    player = data.player;
+    endPos = data.endPos;
+    score = data.score;
+    solved = data.solved;
+    bonusFails = data.bonusFails;
+    moveCount = data.moveCount;
+    device = data.device;
     deviceSelect.value = device;
+    updateScore();
+    if (maze && maze.length) {
+      renderMaze();
+    }
+    return true;
+  } catch {
+    return false;
   }
-  updateScore();
 }
 
 function updateScore() {
-  scoreDisplay.textContent = score;
+  scoreDisplay.textContent = "Punkte: " + score;
 }
 
-function isInside(x, y) {
-  return x >= 0 && y >= 0 && x < mazeSize && y < mazeSize;
-}
-
-// --- Maze-Generierung (Random DFS) ---
+// --- Maze Generierung (Random, immer lösbar) ---
 function generateMaze(size) {
-  mazeSize = size;
-  maze = Array.from({ length: size }, () => Array(size).fill(1)); // 1 = Wand, 0 = Weg
+  // Einfacher Algorithmus: Alle Zellen 0, dann zufällige Wände (1) setzen, Start und Ende frei
+  // Um Lösbarkeit zu garantieren: Start-Ende verbunden mit einem Pfad
 
-  // Start und Ende zufällig (Start links oben, Ende rechts unten)
-  player = { x: 0, y: 0 };
-  maze[0][0] = 0;
-  endPos = { x: size - 1, y: size - 1 };
-  maze[endPos.y][endPos.x] = 0;
+  // Initial alles 1 (Wand)
+  maze = Array.from({ length: size }, () => Array(size).fill(1));
 
-  // DFS Stack
-  const stack = [];
-  stack.push({ x: 0, y: 0 });
-
-  while (stack.length) {
-    const current = stack[stack.length - 1];
-    const neighbors = [];
-
-    // Nachbarn 2 Schritte weg prüfen (N, S, O, W)
-    const directions = [
-      { x: 0, y: -2 },
-      { x: 2, y: 0 },
-      { x: 0, y: 2 },
-      { x: -2, y: 0 },
-    ];
-
-    for (const dir of directions) {
-      const nx = current.x + dir.x;
-      const ny = current.y + dir.y;
-      if (isInside(nx, ny) && maze[ny][nx] === 1) {
-        neighbors.push({ x: nx, y: ny, betweenX: current.x + dir.x / 2, betweenY: current.y + dir.y / 2 });
-      }
-    }
-
-    if (neighbors.length) {
-      const chosen = neighbors[Math.floor(Math.random() * neighbors.length)];
-      maze[chosen.y][chosen.x] = 0;
-      maze[chosen.betweenY][chosen.betweenX] = 0;
-      stack.push({ x: chosen.x, y: chosen.y });
+  // Pfad von Start zu Ende "graben"
+  let x = 0, y = 0;
+  maze[y][x] = 0;
+  while (x < size - 1 || y < size - 1) {
+    if (x < size - 1 && y < size - 1) {
+      if (Math.random() < 0.5) x++; else y++;
+    } else if (x < size - 1) {
+      x++;
     } else {
-      stack.pop();
+      y++;
     }
+    maze[y][x] = 0;
   }
+
+  // Weitere zufällige freie Zellen hinzufügen, ca 40%
+  for (let i = 0; i < size * size * 0.4; i++) {
+    let rx = Math.floor(Math.random() * size);
+    let ry = Math.floor(Math.random() * size);
+    maze[ry][rx] = 0;
+  }
+
+  return maze;
 }
 
-// --- Maze rendern ---
+// --- Maze Darstellung ---
 function renderMaze() {
-  mazeContainer.style.gridTemplateColumns = `repeat(${mazeSize}, 1fr)`;
   mazeContainer.innerHTML = "";
+  mazeContainer.style.gridTemplateColumns = `repeat(${mazeSize}, 1fr)`;
+
+  // Größere Zellen bei kleinen Geräten
+  let cellSize = 30;
+  if (device === "mobile") cellSize = 40;
+  else if (device === "desktop") cellSize = 30;
+  else {
+    // auto
+    if (window.innerWidth < 600) cellSize = 40;
+    else if (window.innerWidth < 900) cellSize = 35;
+    else cellSize = 30;
+  }
+
+  mazeContainer.style.width = `${cellSize * mazeSize}px`;
+  mazeContainer.style.height = `${cellSize * mazeSize}px`;
 
   for (let y = 0; y < mazeSize; y++) {
     for (let x = 0; x < mazeSize; x++) {
@@ -122,91 +144,73 @@ function renderMaze() {
       if (maze[y][x] === 1) cell.classList.add("wall");
       if (player.x === x && player.y === y) cell.classList.add("player");
       if (endPos.x === x && endPos.y === y) cell.classList.add("end");
+      cell.style.width = `${cellSize}px`;
+      cell.style.height = `${cellSize}px`;
       mazeContainer.appendChild(cell);
     }
   }
 }
 
-// --- Spieler bewegen ---
+// --- Bewegung ---
 function movePlayer(dx, dy) {
   const nx = player.x + dx;
   const ny = player.y + dy;
-  if (isInside(nx, ny) && maze[ny][nx] === 0) {
-    player.x = nx;
-    player.y = ny;
-    moveCount++;
-    renderMaze();
-    checkWin();
-  }
-}
+  if (maze[ny][nx] === 1) return; // Wand
 
-function checkWin() {
+  player.x = nx;
+  player.y = ny;
+  moveCount++;
+  updateScore();
+
   if (player.x === endPos.x && player.y === endPos.y) {
-    score++;
     solved++;
-    updateScore();
-    saveData();
-    alert("Du hast das Labyrinth geschafft!");
-    adjustMazeSize();
-    startGame();
+    score += 10; // Punkte fürs Lösen
+    alert("Glückwunsch! Labyrinth gelöst.");
+    generateNewMaze();
+  } else {
+    renderMaze();
   }
 }
 
-// --- Größe anpassen bei Meilensteinen ---
-function adjustMazeSize() {
-  const milestones = [10, 50, 150, 500, 1000];
-  for (let i = milestones.length - 1; i >= 0; i--) {
-    if (score >= milestones[i]) {
-      mazeSize = 5 + i * 5;
-      break;
-    }
-  }
-}
-
-// --- Spiel starten ---
-function startGame() {
-  builderMode = false;
-  generateMaze(mazeSize);
+// --- Neues Maze starten ---
+function generateNewMaze() {
+  mazeSize = 5 + Math.min(solved, 10); // Maze wird max bis 15x15 größer
+  maze = generateMaze(mazeSize);
   player = { x: 0, y: 0 };
+  endPos = { x: mazeSize - 1, y: mazeSize - 1 };
   moveCount = 0;
-  showScreen("game");
   renderMaze();
   updateScore();
 }
 
-// --- Touch Steuerung ---
-let touchStartX = null, touchStartY = null;
-
-document.addEventListener("touchstart", (e) => {
-  if (!screens.game.classList.contains("hidden")) {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  }
-});
-
-document.addEventListener("touchend", (e) => {
-  if (!screens.game.classList.contains("hidden")) {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    const dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      movePlayer(dx > 0 ? 1 : -1, 0);
-    } else {
-      movePlayer(0, dy > 0 ? 1 : -1);
-    }
-  }
-});
-
-// --- Tastatursteuerung ---
-document.addEventListener("keydown", (e) => {
-  if (!screens.game.classList.contains("hidden") && device === "PC") {
+// --- Steuerung ---
+function setupControls() {
+  window.addEventListener("keydown", e => {
+    if (gameScreen.classList.contains("hidden")) return;
     switch (e.key) {
-      case "ArrowUp": movePlayer(0, -1); break;
-      case "ArrowDown": movePlayer(0, 1); break;
-      case "ArrowLeft": movePlayer(-1, 0);break;
-      case "ArrowRight": movePlayer(1, 0); break;
+      case "ArrowUp":
+      case "w":
+      case "W":
+        movePlayer(0, -1);
+        break;
+      case "ArrowDown":
+      case "s":
+      case "S":
+        movePlayer(0, 1);
+        break;
+      case "ArrowLeft":
+      case "a":
+      case "A":
+        movePlayer(-1, 0);
+        break;
+      case "ArrowRight":
+      case "d":
+      case "D":
+        movePlayer(1, 0);
+        break;
     }
-  }
-});
+  });
+}
 
 // --- Statistiken anzeigen ---
 function showStats() {
@@ -214,81 +218,37 @@ function showStats() {
   document.getElementById("statSolved").textContent = solved;
   document.getElementById("statFails").textContent = bonusFails;
   document.getElementById("statMoves").textContent = moveCount;
-  document.getElementById("statDevice").textContent = device;
+  document.getElementById("statDevice").textContent = device.charAt(0).toUpperCase() + device.slice(1);
   showScreen("stats");
 }
 
-// --- Gerät ändern ---
-deviceSelect.addEventListener("change", () => {
-  device = deviceSelect.value;
-  saveData();
-});
-
-// --- Buttons Events ---
-document.getElementById("startGameBtn").addEventListener("click", () => {
-  adjustMazeSize();
-  startGame();
-});
-
-document.getElementById("backToMenu").addEventListener("click", () => {
-  showScreen("menu");
-  saveData();
-});
-
-document.getElementById("statsBtn").addEventListener("click", () => {
-  showStats();
-});
-
-document.getElementById("backFromStats").addEventListener("click", () => {
-  showScreen("menu");
-});
-
-document.getElementById("startBuilderBtn").addEventListener("click", () => {
-  builderMode = true;
-  mazeSize = 5;
-  builderData = Array.from({ length: mazeSize }, () => Array(mazeSize).fill(1));
-  builderStart = { x: 0, y: 0 };
-  builderEnd = { x: mazeSize - 1, y: mazeSize - 1 };
-  renderBuilder();
-  showScreen("builder");
-});
-
-document.getElementById("backFromBuilder").addEventListener("click", () => {
-  showScreen("menu");
-});
-
-document.getElementById("startBuilderGame").addEventListener("click", () => {
-  // Übernehme gebautes Maze ins Spiel
-  maze = builderData.map(row => row.slice());
-  mazeSize = maze.length;
-  player = { ...builderStart };
-  endPos = { ...builderEnd };
-  score = 0;
-  solved = 0;
-  moveCount = 0;
-  bonusFails = 0;
-  updateScore();
-  showScreen("game");
-  renderMaze();
-  saveData();
-});
-
-// --- Maze-Baumeister rendern ---
+// --- Maze-Baumeister ---
+// Erstellt ein editierbares Gitter für den User
 function renderBuilder() {
-  builderContainer.style.gridTemplateColumns = `repeat(${mazeSize}, 1fr)`;
   builderContainer.innerHTML = "";
+  builderContainer.style.gridTemplateColumns = `repeat(${mazeSize}, 1fr)`;
+  const size = mazeSize;
 
-  for (let y = 0; y < mazeSize; y++) {
-    for (let x = 0; x < mazeSize; x++) {
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
       const cell = document.createElement("div");
       cell.classList.add("cell");
-      if (builderData[y][x] === 1) cell.classList.add("wall");
+      cell.style.width = "30px";
+      cell.style.height = "30px";
+      cell.style.userSelect = "none";
+
+      // Wand oder leer
+      if (builderData[y] && builderData[y][x] === 1) cell.classList.add("wall");
+
+      // Start und Ende markieren
       if (builderStart.x === x && builderStart.y === y) cell.textContent = "S";
       else if (builderEnd.x === x && builderEnd.y === y) cell.textContent = "E";
-      cell.style.userSelect = "none";
+      else cell.textContent = "";
+
       cell.addEventListener("click", () => {
-        if (x === builderStart.x && y === builderStart.y) return; // Start bleibt Start
-        if (x === builderEnd.x && y === builderEnd.y) return;     // Ende bleibt Ende
+        if (builderStart.x === x && builderStart.y === y) return;
+        if (builderEnd.x === x && builderEnd.y === y) return;
+
         builderData[y][x] = builderData[y][x] === 1 ? 0 : 1;
         renderBuilder();
       });
@@ -297,6 +257,79 @@ function renderBuilder() {
   }
 }
 
+// --- Builder initialisieren ---
+function initBuilder() {
+  mazeSize = 5;
+  builderData = generateMaze(mazeSize).map(row => row.slice());
+  builderStart = { x: 0, y: 0 };
+  builderEnd = { x: mazeSize - 1, y: mazeSize - 1 };
+  renderBuilder();
+}
+
+// --- Maze mit Builder-Daten starten ---
+function startBuilderGame() {
+  maze = builderData.map(row => row.slice());
+  mazeSize = maze.length;
+  player = { x: builderStart.x, y: builderStart.y };
+  endPos = { x: builderEnd.x, y: builderEnd.y };
+  moveCount = 0;
+  solved = 0;
+  score = 0;
+  updateScore();
+  renderMaze();
+  showScreen("game");
+}
+
+// --- Gerät ändern ---
+function changeDevice() {
+  device = deviceSelect.value;
+  if (device === "auto") {
+    // Automatisch bleibt so, keine Aktion nötig
+  }
+  if (!gameScreen.classList.contains("hidden")) renderMaze();
+}
+
+// --- Event Listener Setup ---
+function setupListeners() {
+  document.getElementById("startGameBtn").addEventListener("click", () => {
+    generateNewMaze();
+    showScreen("game");
+  });
+
+  document.getElementById("statsBtn").addEventListener("click", showStats);
+  document.getElementById("backFromStats").addEventListener("click", () => showScreen("menu"));
+
+  document.getElementById("backToMenu").addEventListener("click", () => {
+    saveData();
+    showScreen("menu");
+  });
+
+  document.getElementById("startBuilderBtn").addEventListener("click", () => {
+    initBuilder();
+    showScreen("builder");
+  });
+
+  document.getElementById("backFromBuilder").addEventListener("click", () => showScreen("menu"));
+
+  document.getElementById("startBuilderGame").addEventListener("click", () => {
+    startBuilderGame();
+  });
+
+  deviceSelect.addEventListener("change", changeDevice);
+
+  document.getElementById("loadAccountBtn").addEventListener("click", () => {
+    if (loadData()) alert("Account geladen!");
+    else alert("Kein Account gefunden.");
+  });
+}
+
 // --- Initialisierung ---
-loadData();
-showScreen("menu");
+function init() {
+  setupListeners();
+  setupControls();
+  showScreen("menu");
+  changeDevice();
+  updateScore();
+}
+
+init();

@@ -3,58 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Labyrinth Tycoon</title>
+  <title>Labyrinth-Tycoon</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <!-- Hauptmenü -->
-  <div id="menu" class="screen">
-    <h1>Labyrinth Tycoon</h1>
-    <label for="accountCode">Account Code eingeben:</label><br />
-    <input id="accountCode" type="text" placeholder="Code eingeben" autocomplete="off" /><br />
-    <button id="loadAccountBtn">Account laden</button>
-    <button id="startGameBtn">Spiel starten</button>
-    <button id="statsBtn">Statistiken</button>
-    <button id="startBuilderBtn">Maze-Baumeister</button>
-    <br />
-    <label for="deviceSelect">Gerät auswählen:</label><br />
-    <select id="deviceSelect">
-      <option value="auto">Automatisch</option>
-      <option value="mobile">Handy/Tablet</option>
-      <option value="desktop">PC</option>
-    </select>
-  </div>
+  <section id="menuScreen">
+    <h1>Maze-Baumeister</h1>
+    <button id="btnStartGame" class="btn">Neues Spiel starten</button>
+    <button id="btnMazeBuilder" class="btn">Maze-Baumeister öffnen</button>
+    <button id="btnShowStats" class="btn">Statistiken anzeigen</button>
+  </section>
 
-  <!-- Spiel-Bildschirm -->
-  <div id="game" class="screen hidden">
-    <div id="infoBar">
-      <span id="scoreDisplay">Punkte: 0</span>
-      <button id="backToMenu">Zurück</button>
-    </div>
-    <div id="mazeContainer"></div>
-  </div>
+  <!-- Spielbereich -->
+  <section id="gameScreen" style="display:none">
+    <h2>Spiel läuft</h2>
+    <div id="pointsDisplay">Punkte: 0</div>
+    <div id="mazeContainer" class="maze-grid"></div>
+    <button id="btnBackFromGame" class="btn back-btn">Zurück zum Menü</button>
+  </section>
 
-  <!-- Statistik -->
-  <div id="stats" class="screen hidden">
+  <!-- Statistikbereich -->
+  <section id="statsScreen" style="display:none">
     <h2>Statistiken</h2>
-    <p>Punkte: <span id="statScore">0</span></p>
-    <p>Gelöste Labyrinthe: <span id="statSolved">0</span></p>
-    <p>Bonus-Labyrinth Misserfolge: <span id="statFails">0</span></p>
-    <p>Gesamtbewegungen: <span id="statMoves">0</span></p>
-    <p>Gerät: <span id="statDevice">Auto</span></p>
-    <button id="backFromStats">Zurück</button>
-  </div>
+    <p>Hier könnten weitere Statistiken angezeigt werden.</p>
+    <button id="btnBackFromStats" class="btn back-btn">Zurück zum Menü</button>
+  </section>
 
   <!-- Maze-Baumeister -->
-  <div id="builder" class="screen hidden">
+  <section id="builderScreen" style="display:none">
     <h2>Maze-Baumeister</h2>
-    <div id="builderContainer"></div>
-    <div id="builderControls">
-      <button id="startBuilderGame">Dieses Labyrinth spielen</button>
-      <button id="backFromBuilder">Zurück</button>
-      <p>Hinweis: Klick auf Zellen um Wand/weg umzuschalten. S = Start, E = Ende</p>
-    </div>
-  </div>
+    <p>Klicke Zellen an, um Wände zu entfernen oder hinzuzufügen. Start (grün) und Ziel (rot) sind fix.</p>
+    <div id="mazeBuilderGrid" class="maze-grid"></div>
+    <button id="mazeBuilderStart" class="btn">Maze starten</button>
+    <button id="btnBackFromBuilder" class="btn back-btn">Zurück zum Menü</button>
+  </section>
+
+  <!-- Geräteeinstellung -->
+  <section id="deviceSection" style="position:fixed; bottom:10px; right:10px;">
+    <label for="deviceSelect">Gerätetyp:</label>
+    <select id="deviceSelect">
+      <option value="auto" selected>Automatisch</option>
+      <option value="mobile">Mobil</option>
+      <option value="desktop">Desktop</option>
+    </select>
+  </section>
 
   <script src="main.js"></script>
 </body>

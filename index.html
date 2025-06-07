@@ -3,59 +3,50 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Labyrinth Tycoon</title>
-<link rel="stylesheet" href="style.css" />
+<title>Labyrinth Tycoon - Grundversion</title>
+<style>
+  body {
+    background: #222;
+    color: #eee;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0; padding: 20px;
+  }
+  #points {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+  #maze {
+    display: grid;
+    margin: 0 auto;
+    border: 3px solid #90ee90;
+    user-select: none;
+  }
+  .cell {
+    width: 25px;
+    height: 25px;
+    border: 1px solid #444;
+    background: #333;
+  }
+  .wall {
+    background: black;
+  }
+  .start {
+    background: green;
+  }
+  .end {
+    background: red;
+  }
+  .player {
+    background: yellow;
+  }
+</style>
 </head>
 <body>
-  <!-- Hauptmenü -->
-  <div id="menuScreen" class="screen">
-    <h1>Labyrinth Tycoon</h1>
-    <label for="codeInput">Code eingeben:</label>
-    <input type="text" id="codeInput" placeholder="Code eingeben" />
-    <button id="btnLoadCode">Code laden</button>
-    <br /><br />
-    <button id="btnStartGame">Spiel starten</button>
-    <button id="btnShowStats">Statistiken</button>
-    <button id="btnMazeBuilder">Maze Baumeister</button>
-    <br /><br />
-    <label for="deviceSelect">Gerätetyp:</label>
-    <select id="deviceSelect">
-      <option value="mobile">Mobilgerät</option>
-      <option value="desktop">Desktop</option>
-    </select>
-  </div>
 
-  <!-- Spielbildschirm -->
-  <div id="gameScreen" class="screen" style="display:none;">
-    <div id="pointsDisplay">Punkte: 0</div>
-    <div id="mazeContainer"></div>
-    <button id="btnBackFromGame" class="btnBack">Zurück zum Menü</button>
-  </div>
-
-  <!-- Statistik -->
-  <div id="statsScreen" class="screen" style="display:none;">
-    <h2>Statistiken</h2>
-    <div id="statsScreenContent"></div>
-    <button id="btnBackFromStats" class="btnBack">Zurück zum Menü</button>
-  </div>
-
-  <!-- Maze Baumeister -->
-  <div id="builderScreen" class="screen" style="display:none;">
-    <h2>Maze Baumeister</h2>
-    <div id="builderGrid"></div>
-    <div id="builderControls">
-      <button class="builderCellType selected" data-type="0">Leer</button>
-      <button class="builderCellType" data-type="1">Wand</button>
-      <button class="builderCellType" data-type="2">Start</button>
-      <button class="builderCellType" data-type="3">Ende</button>
-    </div>
-    <br />
-    <button id="btnBuilderClear">Zurücksetzen</button>
-    <button id="btnBuilderSave">Speichern</button>
-    <button id="btnBuilderLoad">Laden</button>
-    <br /><br />
-    <button id="btnBackFromBuilder" class="btnBack">Zurück zum Menü</button>
-  </div>
+<h1>Labyrinth Tycoon - Grundversion</h1>
+<div id="points">Punkte: 0</div>
+<div id="maze"></div>
 
 <script src="main.js"></script>
 </body>

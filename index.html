@@ -1,54 +1,62 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Labyrinth-Tycoon</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Labyrinth Tycoon</title>
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <!-- Hauptmenü -->
-  <section id="menuScreen">
-    <h1>Maze-Baumeister</h1>
-    <button id="btnStartGame" class="btn">Neues Spiel starten</button>
-    <button id="btnMazeBuilder" class="btn">Maze-Baumeister öffnen</button>
-    <button id="btnShowStats" class="btn">Statistiken anzeigen</button>
-  </section>
-
-  <!-- Spielbereich -->
-  <section id="gameScreen" style="display:none">
-    <h2>Spiel läuft</h2>
-    <div id="pointsDisplay">Punkte: 0</div>
-    <div id="mazeContainer" class="maze-grid"></div>
-    <button id="btnBackFromGame" class="btn back-btn">Zurück zum Menü</button>
-  </section>
-
-  <!-- Statistikbereich -->
-  <section id="statsScreen" style="display:none">
-    <h2>Statistiken</h2>
-    <p>Hier könnten weitere Statistiken angezeigt werden.</p>
-    <button id="btnBackFromStats" class="btn back-btn">Zurück zum Menü</button>
-  </section>
-
-  <!-- Maze-Baumeister -->
-  <section id="builderScreen" style="display:none">
-    <h2>Maze-Baumeister</h2>
-    <p>Klicke Zellen an, um Wände zu entfernen oder hinzuzufügen. Start (grün) und Ziel (rot) sind fix.</p>
-    <div id="mazeBuilderGrid" class="maze-grid"></div>
-    <button id="mazeBuilderStart" class="btn">Maze starten</button>
-    <button id="btnBackFromBuilder" class="btn back-btn">Zurück zum Menü</button>
-  </section>
-
-  <!-- Geräteeinstellung -->
-  <section id="deviceSection" style="position:fixed; bottom:10px; right:10px;">
+  <div id="menuScreen" class="screen">
+    <h1>Labyrinth Tycoon</h1>
+    <label for="codeInput">Code eingeben:</label>
+    <input type="text" id="codeInput" placeholder="Code eingeben" />
+    <button id="btnLoadCode">Code laden</button>
+    <br /><br />
+    <button id="btnStartGame">Spiel starten</button>
+    <button id="btnShowStats">Statistiken</button>
+    <button id="btnMazeBuilder">Maze Baumeister</button>
+    <br /><br />
     <label for="deviceSelect">Gerätetyp:</label>
     <select id="deviceSelect">
-      <option value="auto" selected>Automatisch</option>
-      <option value="mobile">Mobil</option>
+      <option value="mobile">Mobilgerät</option>
       <option value="desktop">Desktop</option>
     </select>
-  </section>
+  </div>
 
-  <script src="main.js"></script>
+  <!-- Spielbildschirm -->
+  <div id="gameScreen" class="screen" style="display:none;">
+    <div id="pointsDisplay">Punkte: 0</div>
+    <div id="mazeContainer"></div>
+    <button id="btnBackFromGame" class="btnBack">Zurück zum Menü</button>
+  </div>
+
+  <!-- Statistik -->
+  <div id="statsScreen" class="screen" style="display:none;">
+    <h2>Statistiken</h2>
+    <div id="statsScreenContent"></div>
+    <button id="btnBackFromStats" class="btnBack">Zurück zum Menü</button>
+  </div>
+
+  <!-- Maze Baumeister -->
+  <div id="builderScreen" class="screen" style="display:none;">
+    <h2>Maze Baumeister</h2>
+    <div id="builderGrid"></div>
+    <div id="builderControls">
+      <button class="builderCellType selected" data-type="0">Leer</button>
+      <button class="builderCellType" data-type="1">Wand</button>
+      <button class="builderCellType" data-type="2">Start</button>
+      <button class="builderCellType" data-type="3">Ende</button>
+    </div>
+    <br />
+    <button id="btnBuilderClear">Zurücksetzen</button>
+    <button id="btnBuilderSave">Speichern</button>
+    <button id="btnBuilderLoad">Laden</button>
+    <br /><br />
+    <button id="btnBackFromBuilder" class="btnBack">Zurück zum Menü</button>
+  </div>
+
+<script src="main.js"></script>
 </body>
 </html>

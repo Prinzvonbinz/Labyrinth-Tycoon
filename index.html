@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Labyrinth Tycoon - Grundversion</title>
+<title>Labyrinth Tycoon</title>
 <style>
   body {
     background: #222;
@@ -21,24 +21,25 @@
     margin: 0 auto;
     border: 3px solid #90ee90;
     user-select: none;
+    width: max-content;
   }
   .cell {
-    width: 25px;
-    height: 25px;
-    border: 1px solid #444;
-    background: #333;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #555;
+    box-sizing: border-box;
   }
   .wall {
-    background: black;
+    background-color: black;
   }
   .start {
-    background: green;
+    background-color: green;
   }
   .end {
-    background: red;
+    background-color: red;
   }
   .player {
-    background: yellow;
+    background-color: yellow;
   }
 </style>
 </head>

@@ -1,4 +1,4 @@
-let mazeSize = 7; // Startgröße
+let mazeSize = 7; // Startgröße (immer ungerade)
 let points = 0;
 
 let maze = [];
@@ -51,10 +51,27 @@ function shuffleArray(arr) {
   }
 }
 
+function calculateCellSize() {
+  // Passt das Labyrinth in den Viewport (max 95vw breit, 80vh hoch)
+  // Wir nehmen den kleineren Wert für eine quadratische Zelle
+  const maxWidth = window.innerWidth * 0.95;
+  const maxHeight = window.innerHeight * 0.80;
+
+  const cellWidth = Math.floor(maxWidth / mazeSize);
+  const cellHeight = Math.floor(maxHeight / mazeSize);
+
+  return Math.min(cellWidth, cellHeight);
+}
+
 function drawMaze() {
   mazeContainer.innerHTML = '';
-  mazeContainer.style.gridTemplateColumns = `repeat(${mazeSize}, 30px)`;
-  mazeContainer.style.gridTemplateRows = `repeat(${mazeSize}, 30px)`;
+  const cellSize = calculateCellSize();
+
+  mazeContainer.style.gridTemplateColumns = `repeat(${mazeSize}, ${cellSize}px)`;
+  mazeContainer.style.gridTemplateRows = `repeat(${mazeSize}, ${cellSize}px)`;
+  mazeContainer.style.width = `${cellSize * mazeSize}px`;
+  mazeContainer.style.height = `${cellSize * mazeSize}px`;
+
   for (let y = 0; y < mazeSize; y++) {
     for (let x = 0; x < mazeSize; x++) {
       const cell = document.createElement('div');
@@ -86,7 +103,7 @@ function checkEnd() {
     points++;
     pointsDisplay.textContent = `Punkte: ${points}`;
     if ([10, 50, 150, 500, 1000].includes(points)) {
-      mazeSize += 2;
+      mazeSize += 2; // Vergrößere das Labyrinth um 2 (immer ungerade)
     }
     generateMaze(mazeSize);
     drawMaze();
@@ -95,11 +112,15 @@ function checkEnd() {
 
 window.addEventListener('keydown', e => {
   switch (e.key) {
-    case 'ArrowUp': tryMove(0, -1); break;
-    case 'ArrowDown': tryMove(0, 1); break;
-    case 'ArrowLeft': tryMove(-1, 0); break;
-    case 'ArrowRight': tryMove(1, 0); break;
+    case 'ArrowUp': e.preventDefault(); tryMove(0, -1); break;
+    case 'ArrowDown': e.preventDefault(); tryMove(0, 1); break;
+    case 'ArrowLeft': e.preventDefault(); tryMove(-1, 0); break;
+    case 'ArrowRight': e.preventDefault(); tryMove(1, 0); break;
   }
+});
+
+window.addEventListener('resize', () => {
+  drawMaze();
 });
 
 generateMaze(mazeSize);

@@ -1,0 +1,127 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background-color: #111;
+  color: #eee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+#app {
+  width: 100%;
+  max-width: 800px;
+  padding: 20px;
+}
+
+.screen {
+  display: none;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+}
+
+.screen.active,
+.screen:not(.hidden) {
+  display: flex;
+}
+
+h1, h2 {
+  color: #8a2be2;
+}
+
+button {
+  background-color: #8a2be2;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #a155f5;
+}
+
+input {
+  padding: 10px;
+  border: 2px solid #8a2be2;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 300px;
+  font-size: 1rem;
+  background-color: #222;
+  color: white;
+}
+
+#mazeContainer {
+  display: grid;
+  gap: 2px;
+  margin: 20px auto;
+  touch-action: none;
+}
+
+.cell {
+  width: 20px;
+  height: 20px;
+  background-color: #333;
+  border-radius: 3px;
+}
+
+.cell.wall {
+  background-color: #555;
+}
+
+.cell.player {
+  background-color: #00ffcc;
+}
+
+.cell.end {
+  background-color: #ff0066;
+}
+
+#gameUI {
+  margin-top: 15px;
+  text-align: center;
+}
+
+#builderGrid {
+  display: grid;
+  gap: 2px;
+  margin-top: 20px;
+  max-width: 90vw;
+}
+
+.builder-cell {
+  width: 20px;
+  height: 20px;
+  background-color: #444;
+  border: 1px solid #222;
+  cursor: pointer;
+}
+
+.builder-cell.wall {
+  background-color: #777;
+}
+
+.builder-cell.start {
+  background-color: #00ffcc;
+}
+
+.builder-cell.end {
+  background-color: #ff0066;
+}
+
+ul {
+  list-style: none;
+  text-align: left;
+  padding: 0;
+}

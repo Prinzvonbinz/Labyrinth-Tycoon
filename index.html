@@ -2,82 +2,65 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>XXL Party</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #login, #lobby, #game { display: none; }
-    button { margin: 5px; }
-    .player { margin: 3px 0; }
-    .color-swatch { display: inline-block; width: 20px; height: 20px; border: 1px solid #333; vertical-align: middle; margin-left: 5px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Labyrinth Tycoon</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="login">
-    <h2>Login / Account</h2>
-    <label>Dein Name: <input id="username" /></label><br/>
-    <label>Code (leer für neu): <input id="codeInput" maxlength="5" /></label><br/>
-    <button id="btnLogin">Einloggen</button>
-    <div id="loginStatus"></div>
-  </div>
-
-  <div id="mainMenu" style="display:none;">
-    <button id="btnCreateLobby">Lobby erstellen</button>
-    <button id="btnInvitations">Einladungen ansehen</button>
-    <div id="currentCode"></div>
-  </div>
-
-  <div id="invitationsMenu" style="display:none;">
-    <h3>Einladungen</h3>
-    <ul id="invitationList"></ul>
-    <button id="btnBackInvitations">Zurück</button>
-  </div>
-
-  <div id="lobby" style="display:none;">
-    <h3>Lobby <span id="lobbyCode"></span></h3>
-    <div>Host: <span id="hostName"></span></div>
-    <div>Spieler:</div>
-    <ul id="playerList"></ul>
-
-    <div>
-      <h4>Map wählen</h4>
-      <button class="mapBtn" data-map="Map1">Map 1</button>
-      <button class="mapBtn" data-map="Map2">Map 2</button>
-      <button class="mapBtn" data-map="Map3">Map 3</button>
+  <div id="app">
+    <!-- Code-Eingabe -->
+    <div id="codeScreen" class="screen">
+      <h1>Labyrinth Tycoon</h1>
+      <p>Gib deinen Account-Code ein:</p>
+      <input type="text" id="codeInput" placeholder="z. B. LAB-1234-ABCD" maxlength="20"/>
+      <button onclick="enterCode()">Los geht's</button>
     </div>
 
-    <div>
-      <h4>Farbe wählen</h4>
-      <button class="colorBtn" data-color="Rot" style="background:#f00;">Rot</button>
-      <button class="colorBtn" data-color="Grün" style="background:#0f0;">Grün</button>
-      <button class="colorBtn" data-color="Blau" style="background:#00f;">Blau</button>
-      <button class="colorBtn" data-color="Gelb" style="background:#ff0;">Gelb</button>
+    <!-- Hauptmenü -->
+    <div id="mainMenu" class="screen hidden">
+      <h2>Willkommen, <span id="codeDisplay"></span></h2>
+      <button onclick="startGame()">Spiel starten</button>
+      <button onclick="showStats()">Statistiken</button>
+      <button onclick="showMazeBuilder()">Maze Baumeister 🧱</button>
+      <button onclick="changeDevice()">Gerät ändern</button>
     </div>
 
-    <div>
-      <button id="btnStartGame">Spiel starten</button>
+    <!-- Spielfeld -->
+    <div id="gameScreen" class="screen hidden">
+      <div id="mazeContainer"></div>
+      <div id="gameUI">
+        <p>Punkte: <span id="scoreDisplay">0</span></p>
+        <p id="bonusInfo"></p>
+        <button onclick="backToMenu()">Zurück</button>
+      </div>
     </div>
 
-    <div id="lobbyStatus"></div>
-    <button id="btnLeaveLobby">Lobby verlassen</button>
+    <!-- Statistiken -->
+    <div id="statsScreen" class="screen hidden">
+      <h2>Statistiken</h2>
+      <ul>
+        <li>Punkte: <span id="statsPoints">0</span></li>
+        <li>Größtes Labyrinth: <span id="statsSize">5×5</span></li>
+        <li>Gelöste Labyrinthe: <span id="statsSolved">0</span></li>
+        <li>Gescheiterte Bonuslevel: <span id="statsBonusFailed">0</span></li>
+        <li>Durchschnittliche Zeit: <span id="statsAvgTime">0s</span></li>
+        <li>Gerät: <span id="statsDevice">PC</span></li>
+      </ul>
+      <button onclick="backToMenu()">Zurück</button>
+    </div>
+
+    <!-- Maze Baumeister -->
+    <div id="builderScreen" class="screen hidden">
+      <h2>Maze Baumeister 🧱</h2>
+      <div id="builderControls">
+        <button onclick="saveMaze()">Maze speichern</button>
+        <button onclick="loadMaze()">Maze spielen</button>
+        <input type="text" id="mazeCodeInput" placeholder="MAZE-XXXX"/>
+        <button onclick="backToMenu()">Zurück</button>
+      </div>
+      <div id="builderGrid"></div>
+    </div>
   </div>
-
-  <div id="game" style="display:none;">
-    <h3>Spiel: <span id="gameMap"></span></h3>
-    <div>Du bist dran: <span id="currentTurn"></span></div>
-    <div>Deine Farbe: <span id="yourColor"></span></div>
-    <button id="btnRollDice">Würfeln (1-6)</button>
-    <div id="rollResult"></div>
-
-    <div id="minigame" style="display:none;">
-      <h4>Minispiel: Guess the Number</h4>
-      <p>Rate eine Zahl von 1 bis 10:</p>
-      <input type="number" id="guessInput" min="1" max="10"/>
-      <button id="btnSubmitGuess">Rate</button>
-      <div id="minigameStatus"></div>
-    </div>
-  </div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>

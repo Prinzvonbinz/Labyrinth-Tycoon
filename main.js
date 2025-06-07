@@ -1,305 +1,364 @@
-// --- Variablen & State ---
+// --- Globale Variablen ---
+
 let maze = [];
-let rows = 10;
-let cols = 10;
-let playerPos = { row: 0, col: 0 };
+let mazeSize = 5;
+let playerPos = { x: 0, y: 0 };
+let endPos = { x: mazeSize - 1, y: mazeSize - 1 };
 let points = 0;
-let inGame = false;
-let gameState = 'menu'; // 'menu', 'playing', 'stats', 'builder'
-let deviceType = 'auto'; // 'auto', 'mobile', 'desktop'
+let totalMazesCompleted = 0;
+let deviceType = 'auto'; // "desktop" oder "mobile" oder "auto"
+let gameActive = false;
+let bonusMode = false;
+let bonusInterval = null;
+let bonusState = 0; // für Bonuswechsel
 
-// Maze-Baumeister Variablen
-let customMaze = null;
-let mazeBuilderRows = 10;
-let mazeBuilderCols = 10;
-let mazeBuilderGrid = [];
+// UI-Elemente
+const menuScreen = document.getElementById('menuScreen');
+const gameScreen = document.getElementById('gameScreen');
+const statsScreen = document.getElementById('statsScreen');
+const builderScreen = document.getElementById('builderScreen');
 
-// --- DOM Elemente ---
-const screens = {
-  menu: document.getElementById('menuScreen'),
-  game: document.getElementById('gameScreen'),
-  stats: document.getElementById('statsScreen'),
-  builder: document.getElementById('builderScreen'),
-};
-
-const pointsDisplay = document.getElementById('pointsDisplay');
 const mazeContainer = document.getElementById('mazeContainer');
-const mazeBuilderGridEl = document.getElementById('mazeBuilderGrid');
+const pointsDisplay = document.getElementById('pointsDisplay');
+const deviceSelect = document.getElementById('deviceSelect');
 
-// --- Funktionen ---
+const btnStartGame = document.getElementById('btnStartGame');
+const btnMazeBuilder = document.getElementById('btnMazeBuilder');
+const btnShowStats = document.getElementById('btnShowStats');
 
-// Bildschirm wechseln
-function showScreen(screenName) {
-  Object.values(screens).forEach(s => (s.style.display = 'none'));
-  if (screens[screenName]) screens[screenName].style.display = 'block';
-  gameState = screenName;
+const btnBackFromGame = document.getElementById('btnBackFromGame');
+const btnBackFromStats = document.getElementById('btnBackFromStats');
+const btnBackFromBuilder = document.getElementById('btnBackFromBuilder');
+
+const statsScreenContent = statsScreen.querySelector('p');
+
+// --- Initial Setup ---
+
+deviceSelect.addEventListener('change', () => {
+  deviceType = deviceSelect.value;
+  if (deviceType === 'auto') detectDevice();
+  if (gameActive) renderMaze(); // neu rendern bei Gerätewechsel
+});
+
+function detectDevice() {
+  if (/Mobi|Android/i.test(navigator.userAgent)) deviceType = 'mobile';
+  else deviceType = 'desktop';
+  deviceSelect.value = deviceType;
 }
 
-// Neues zufälliges Maze generieren (DFS Backtracking)
-function generateMaze(r, c) {
-  // init 2D array mit 1=Wand
-  maze = Array(r)
-    .fill(null)
-    .map(() => Array(c).fill(1));
+// --- Maze-Generierung ---
 
-  function shuffle(arr) {
-    return arr.sort(() => Math.random() - 0.5);
-  }
+function generateMaze(size) {
+  // Einfaches zufälliges Labyrinth mit Start und End-Punkt
+  // 0 = leer, 1 = Wand
 
-  function carve(row, col) {
-    maze[row][col] = 0;
-    const directions = shuffle([
-      [0, 2],
-      [0, -2],
-      [2, 0],
-      [-2, 0],
-    ]);
-    for (const [dr, dc] of directions) {
-      const nr = row + dr;
-      const nc = col + dc;
-      if (nr >= 0 && nr < r && nc >= 0 && nc < c && maze[nr][nc] === 1) {
-        maze[row + dr / 2][col + dc / 2] = 0;
-        carve(nr, nc);
-      }
+  // Für Einfachheit: alle Wände außen, innen 70% leer, 30% Wand
+
+  const m = [];
+  for (let y = 0; y < size; y++) {
+    m[y] = [];
+    for (let x = 0; x < size; x++) {
+      if (y === 0 || x === 0 || y === size - 1 || x === size - 1) m[y][x] = 1;
+      else m[y][x] = Math.random() < 0.3 ? 1 : 0;
     }
   }
 
-  // Start bei (0,0) immer frei
-  carve(0, 0);
-  // Ende immer frei
-  maze[r - 1][c - 1] = 0;
+  // Start und Ende frei
+  m[0][0] = 0;
+  m[size - 1][size - 1] = 0;
+
+  return m;
 }
 
-// Maze rendern
+// --- Rendering ---
+
 function renderMaze() {
   mazeContainer.innerHTML = '';
-  mazeContainer.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-  mazeContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
-  const cellSize = getCellSize();
+  // Größe des Grids anpassen (max 60vh, max 90vw)
+  const maxHeight = window.innerHeight * 0.6;
+  const maxWidth = window.innerWidth * 0.9;
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
+  const cellSizeH = Math.floor(maxHeight / mazeSize);
+  const cellSizeW = Math.floor(maxWidth / mazeSize);
+  const cellSize = Math.min(cellSizeH, cellSizeW);
+
+  mazeContainer.style.gridTemplateRows = `repeat(${mazeSize}, ${cellSize}px)`;
+  mazeContainer.style.gridTemplateColumns = `repeat(${mazeSize}, ${cellSize}px)`;
+
+  for (let y = 0; y < mazeSize; y++) {
+    for (let x = 0; x < mazeSize; x++) {
       const cell = document.createElement('div');
-      cell.style.width = cellSize + 'px';
-      cell.style.height = cellSize + 'px';
       cell.classList.add('cell');
-      if (maze[r][c] === 1) cell.classList.add('wall');
-      if (r === playerPos.row && c === playerPos.col) cell.classList.add('player');
-      if (r === rows - 1 && c === cols - 1) cell.classList.add('end');
+      if (maze[y][x] === 1) cell.classList.add('wall');
+      if (playerPos.x === x && playerPos.y === y) cell.classList.add('player');
+      if (endPos.x === x && endPos.y === y) cell.classList.add('end');
       mazeContainer.appendChild(cell);
     }
   }
 }
 
-// Zellgröße abhängig vom Gerät
-function getCellSize() {
-  const maxWidth = window.innerWidth * 0.8;
-  const maxHeight = window.innerHeight * 0.6;
-  let sizeW = maxWidth / cols;
-  let sizeH = maxHeight / rows;
-  let size = Math.floor(Math.min(sizeW, sizeH));
-  if (deviceType === 'mobile') size = Math.min(size, 25);
-  else if (deviceType === 'desktop') size = Math.min(size, 40);
-  else size = Math.min(size, 30);
-  return size;
-}
+// --- Spieler bewegen ---
 
-// Spieler bewegen
-function movePlayer(dr, dc) {
-  if (!inGame) return;
-  const nr = playerPos.row + dr;
-  const nc = playerPos.col + dc;
-  if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) return;
-  if (maze[nr][nc] === 1) return; // Wand
-  playerPos = { row: nr, col: nc };
+function movePlayer(dx, dy) {
+  if (!gameActive) return;
+  let newX = playerPos.x + dx;
+  let newY = playerPos.y + dy;
+
+  if (newX < 0 || newX >= mazeSize || newY < 0 || newY >= mazeSize) return; // Außenbereich
+
+  if (maze[newY][newX] === 1) return; // Wand
+
+  playerPos.x = newX;
+  playerPos.y = newY;
+
   renderMaze();
-  checkGoal();
+
+  checkWin();
 }
 
-// Ziel erreicht?
-function checkGoal() {
-  if (playerPos.row === rows - 1 && playerPos.col === cols - 1) {
+// --- Gewinnprüfung ---
+
+function checkWin() {
+  if (playerPos.x === endPos.x && playerPos.y === endPos.y) {
     points++;
-    updatePoints();
-    growMazeIfNeeded();
-    startNewMaze();
+    totalMazesCompleted++;
+    updatePointsDisplay();
+
+    // Meilenstein: Labyrinth vergrößern
+    if ([10, 50, 150, 500, 1000].includes(points)) {
+      mazeSize = Math.min(mazeSize + 2, 25);
+    }
+
+    // Neues Labyrinth generieren
+    generateAndStartMaze();
   }
 }
 
-// Punktestand aktualisieren
-function updatePoints() {
+// --- Punkteanzeige ---
+
+function updatePointsDisplay() {
   pointsDisplay.textContent = `Punkte: ${points}`;
 }
 
-// Labyrinth nach Punkten vergrößern
-function growMazeIfNeeded() {
-  if (points === 10) {
-    rows += 2;
-    cols += 2;
-  } else if (points === 50) {
-    rows += 3;
-    cols += 3;
-  } else if (points === 150) {
-    rows += 4;
-    cols += 4;
-  } else if (points === 500) {
-    rows += 5;
-    cols += 5;
-  } else if (points === 1000) {
-    rows += 6;
-    cols += 6;
-  }
-}
+// --- Neues Labyrinth starten ---
 
-// Neues Labyrinth starten (random oder custom)
-function startNewMaze() {
-  playerPos = { row: 0, col: 0 };
-  if (customMaze) {
-    maze = JSON.parse(JSON.stringify(customMaze));
-    rows = maze.length;
-    cols = maze[0].length;
-  } else {
-    generateMaze(rows, cols);
-  }
+function generateAndStartMaze() {
+  maze = generateMaze(mazeSize);
+  playerPos = { x: 0, y: 0 };
+  endPos = { x: mazeSize - 1, y: mazeSize - 1 };
   renderMaze();
 }
 
-// --- Maze-Baumeister Funktionen ---
+// --- Steuerung ---
 
-function createMazeBuilderGrid(rows, cols) {
-  mazeBuilderRows = rows;
-  mazeBuilderCols = cols;
-  mazeBuilderGrid = Array(rows)
-    .fill(null)
-    .map(() => Array(cols).fill(1));
-  mazeBuilderGrid[0][0] = 0; // Start
-  mazeBuilderGrid[rows - 1][cols - 1] = 0; // Ziel
+// Bonus-Modi
+
+const bonusEffects = [
+  'normal',
+  'reverse',
+  'blur',
+  'showMaze',
+  'black',
+];
+
+// Bonus-Zustand wechseln alle 5s, wenn Bonusmode aktiv
+
+function startBonusInterval() {
+  if (bonusInterval) clearInterval(bonusInterval);
+  bonusInterval = setInterval(() => {
+    bonusState = (bonusState + 1) % bonusEffects.length;
+    applyBonusEffect();
+  }, 5000);
 }
 
-function renderMazeBuilder() {
-  mazeBuilderGridEl.innerHTML = '';
-  mazeBuilderGridEl.style.gridTemplateRows = `repeat(${mazeBuilderRows}, 1fr)`;
-  mazeBuilderGridEl.style.gridTemplateColumns = `repeat(${mazeBuilderCols}, 1fr)`;
+function stopBonusInterval() {
+  if (bonusInterval) clearInterval(bonusInterval);
+  bonusState = 0;
+  applyBonusEffect();
+}
 
-  const cellSize = getCellSize();
+function applyBonusEffect() {
+  const effect = bonusEffects[bonusState];
+  mazeContainer.style.filter = '';
+  mazeContainer.style.backgroundColor = '';
 
-  for (let r = 0; r < mazeBuilderRows; r++) {
-    for (let c = 0; c < mazeBuilderCols; c++) {
-      const cell = document.createElement('div');
-      cell.style.width = cellSize + 'px';
-      cell.style.height = cellSize + 'px';
-      cell.classList.add('cell');
-      if (mazeBuilderGrid[r][c] === 1) cell.classList.add('wall');
-      if (r === 0 && c === 0) cell.classList.add('start');
-      if (r === mazeBuilderRows - 1 && c === mazeBuilderCols - 1) cell.classList.add('end');
-
-      if (!((r === 0 && c === 0) || (r === mazeBuilderRows - 1 && c === mazeBuilderCols - 1))) {
-        cell.style.cursor = 'pointer';
-        cell.addEventListener('click', () => {
-          mazeBuilderGrid[r][c] = mazeBuilderGrid[r][c] === 1 ? 0 : 1;
-          renderMazeBuilder();
-        });
-      }
-      mazeBuilderGridEl.appendChild(cell);
-    }
+  if (effect === 'normal') {
+    mazeContainer.style.filter = 'none';
+  } else if (effect === 'reverse') {
+    // Umkehrung der Steuerung wird in movePlayer berücksichtigt
+    // Hier optisch keine Änderung nötig
+    mazeContainer.style.border = '2px solid yellow';
+  } else if (effect === 'blur') {
+    mazeContainer.style.filter = 'blur(3px)';
+  } else if (effect === 'showMaze') {
+    // Spieler nicht sichtbar, nur Labyrinth
+    mazeContainer.style.filter = 'grayscale(100%)';
+  } else if (effect === 'black') {
+    mazeContainer.style.backgroundColor = 'black';
   }
 }
 
-function startCustomMazeGame() {
-  if (!customMaze) {
-    alert('Bitte erst das Labyrinth im Maze-Baumeister erstellen.');
-    return;
-  }
-  inGame = true;
-  playerPos = { row: 0, col: 0 };
-  maze = JSON.parse(JSON.stringify(customMaze));
-  rows = maze.length;
-  cols = maze[0].length;
-  renderMaze();
-  updatePoints();
-  showScreen('game');
+// Variable um zu erkennen, ob aktuell Steuerung invertiert ist
+function isReverseControl() {
+  return bonusEffects[bonusState] === 'reverse';
 }
 
-// --- Event-Listener & Initialisierung ---
+// --- Tastatursteuerung ---
 
-// Gerätetyp aus Auswahl lesen
-function updateDeviceType() {
-  const sel = document.getElementById('deviceSelect');
-  deviceType = sel.value;
-}
+window.addEventListener('keydown', (e) => {
+  if (!gameActive) return;
 
-// Steuerung: Pfeiltasten
-window.addEventListener('keydown', e => {
-  if (!inGame) return;
-  if (gameState !== 'game') return;
+  let dx = 0,
+    dy = 0;
+
+  const reverse = isReverseControl();
 
   switch (e.key) {
     case 'ArrowUp':
     case 'w':
-      movePlayer(-1, 0);
+    case 'W':
+      dy = reverse ? 1 : -1;
       break;
     case 'ArrowDown':
     case 's':
-      movePlayer(1, 0);
+    case 'S':
+      dy = reverse ? -1 : 1;
       break;
     case 'ArrowLeft':
     case 'a':
-      movePlayer(0, -1);
+    case 'A':
+      dx = reverse ? 1 : -1;
       break;
     case 'ArrowRight':
     case 'd':
-      movePlayer(0, 1);
+    case 'D':
+      dx = reverse ? -1 : 1;
       break;
+  }
+  if (dx !== 0 || dy !== 0) {
+    e.preventDefault();
+    movePlayer(dx, dy);
   }
 });
 
-// Menü-Buttons
-document.getElementById('btnStartGame').addEventListener('click', () => {
-  updateDeviceType();
+// --- Touchsteuerung (Swipe) ---
+
+let touchStartX = 0;
+let touchStartY = 0;
+
+mazeContainer.addEventListener('touchstart', (e) => {
+  if (!gameActive) return;
+  const touch = e.changedTouches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+});
+
+mazeContainer.addEventListener('touchend', (e) => {
+  if (!gameActive) return;
+  const touch = e.changedTouches[0];
+  const dx = touch.clientX - touchStartX;
+  const dy = touch.clientY - touchStartY;
+
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+
+  if (absDx < 20 && absDy < 20) return; // Zu kurze Swipe
+
+  const reverse = isReverseControl();
+
+  if (absDx > absDy) {
+    // horizontal
+    if (dx > 0) movePlayer(reverse ? -1 : 1, 0);
+    else movePlayer(reverse ? 1 : -1, 0);
+  } else {
+    // vertikal
+    if (dy > 0) movePlayer(0, reverse ? -1 : 1);
+    else movePlayer(0, reverse ? 1 : -1);
+  }
+});
+
+// --- Menüsteuerung ---
+
+btnStartGame.addEventListener('click', () => {
+  startGame();
+});
+
+btnBackFromGame.addEventListener('click', () => {
+  endGame();
+});
+
+btnShowStats.addEventListener('click', () => {
+  showStats();
+});
+
+btnBackFromStats.addEventListener('click', () => {
+  showMenu();
+});
+
+btnMazeBuilder.addEventListener('click', () => {
+  showBuilder();
+});
+
+btnBackFromBuilder.addEventListener('click', () => {
+  showMenu();
+});
+
+// --- Spiele starten/beenden ---
+
+function startGame() {
   points = 0;
-  customMaze = null; // Standard: zufällig
-  rows = 10;
-  cols = 10;
-  inGame = true;
-  startNewMaze();
-  updatePoints();
-  showScreen('game');
-});
+  totalMazesCompleted = 0;
+  mazeSize = 5;
+  gameActive = true;
+  bonusMode = false;
+  stopBonusInterval();
 
-document.getElementById('btnShowStats').addEventListener('click', () => {
-  showScreen('stats');
-});
+  updatePointsDisplay();
 
-document.getElementById('btnBackFromGame').addEventListener('click', () => {
-  inGame = false;
-  showScreen('menu');
-});
+  showSection('gameScreen');
+  generateAndStartMaze();
+}
 
-document.getElementById('btnBackFromStats').addEventListener('click', () => {
-  showScreen('menu');
-});
+function endGame() {
+  gameActive = false;
+  bonusMode = false;
+  stopBonusInterval();
+  showMenu();
+}
 
-document.getElementById('btnMazeBuilder').addEventListener('click', () => {
-  updateDeviceType();
-  points = 0;
-  inGame = false;
-  createMazeBuilderGrid(mazeBuilderRows, mazeBuilderCols);
-  renderMazeBuilder();
-  showScreen('builder');
-});
+// --- Anzeige wechseln ---
 
-document.getElementById('mazeBuilderStart').addEventListener('click', () => {
-  customMaze = JSON.parse(JSON.stringify(mazeBuilderGrid));
-  startCustomMazeGame();
-});
+function showSection(id) {
+  menuScreen.style.display = id === 'menuScreen' ? 'block' : 'none';
+  gameScreen.style.display = id === 'gameScreen' ? 'block' : 'none';
+  statsScreen.style.display = id === 'statsScreen' ? 'block' : 'none';
+  builderScreen.style.display = id === 'builderScreen' ? 'block' : 'none';
+}
 
-document.getElementById('btnBackFromBuilder').addEventListener('click', () => {
-  showScreen('menu');
-});
+// --- Statistik anzeigen ---
 
-// Beim Laden
-window.addEventListener('load', () => {
-  showScreen('menu');
-  updateDeviceType();
-});
+function showStats() {
+  updateStats();
+  showSection('statsScreen');
+}
+
+function updateStats() {
+  statsScreenContent.innerHTML = `
+    <strong>Aktuelle Punkte:</strong> ${points} <br />
+    <strong>Größe des Labyrinths:</strong> ${mazeSize} x ${mazeSize} <br />
+    <strong>Gesamt absolvierte Labyrinthe:</strong> ${totalMazesCompleted} <br />
+    <strong>Gerätetyp:</strong> ${deviceType} <br />
+  `;
+}
+
+// --- Menu anzeigen ---
+
+function showMenu() {
+  showSection('menuScreen');
+}
+
+// --- Initial ---
+
+detectDevice();
+showMenu();

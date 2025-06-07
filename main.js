@@ -1,4 +1,4 @@
-let mazeSize = 7; // Startgröße (immer ungerade)
+let mazeSize = 7;
 let points = 0;
 
 let maze = [];
@@ -12,12 +12,7 @@ function generateMaze(size) {
   maze = Array(size).fill().map(() => Array(size).fill(1));
 
   function neighbors(x, y) {
-    const dirs = [
-      [2, 0],
-      [-2, 0],
-      [0, 2],
-      [0, -2]
-    ];
+    const dirs = [[2, 0], [-2, 0], [0, 2], [0, -2]];
     return dirs
       .map(d => [x + d[0], y + d[1]])
       .filter(([nx, ny]) => nx > 0 && ny > 0 && nx < size - 1 && ny < size - 1 && maze[ny][nx] === 1);
@@ -52,14 +47,10 @@ function shuffleArray(arr) {
 }
 
 function calculateCellSize() {
-  // Passt das Labyrinth in den Viewport (max 95vw breit, 80vh hoch)
-  // Wir nehmen den kleineren Wert für eine quadratische Zelle
   const maxWidth = window.innerWidth * 0.95;
   const maxHeight = window.innerHeight * 0.80;
-
   const cellWidth = Math.floor(maxWidth / mazeSize);
   const cellHeight = Math.floor(maxHeight / mazeSize);
-
   return Math.min(cellWidth, cellHeight);
 }
 
@@ -102,9 +93,7 @@ function checkEnd() {
   if (playerPos.x === endPos.x && playerPos.y === endPos.y) {
     points++;
     pointsDisplay.textContent = `Punkte: ${points}`;
-    if ([10, 50, 150, 500, 1000].includes(points)) {
-      mazeSize += 2; // Vergrößere das Labyrinth um 2 (immer ungerade)
-    }
+    mazeSize += 2;
     generateMaze(mazeSize);
     drawMaze();
   }
@@ -121,6 +110,29 @@ window.addEventListener('keydown', e => {
 
 window.addEventListener('resize', () => {
   drawMaze();
+});
+
+// TOUCH-STEUERUNG
+let startX = 0, startY = 0;
+
+mazeContainer.addEventListener('touchstart', e => {
+  const touch = e.touches[0];
+  startX = touch.clientX;
+  startY = touch.clientY;
+}, { passive: true });
+
+mazeContainer.addEventListener('touchend', e => {
+  const touch = e.changedTouches[0];
+  const dx = touch.clientX - startX;
+  const dy = touch.clientY - startY;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (dx > 30) tryMove(1, 0);
+    else if (dx < -30) tryMove(-1, 0);
+  } else {
+    if (dy > 30) tryMove(0, 1);
+    else if (dy < -30) tryMove(0, -1);
+  }
 });
 
 generateMaze(mazeSize);

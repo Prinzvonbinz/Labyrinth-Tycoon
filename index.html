@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>XXL Party</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #login, #lobby, #game { display: none; }
+    button { margin: 5px; }
+    .player { margin: 3px 0; }
+    .color-swatch { display: inline-block; width: 20px; height: 20px; border: 1px solid #333; vertical-align: middle; margin-left: 5px; }
+  </style>
+</head>
+<body>
+  <div id="login">
+    <h2>Login / Account</h2>
+    <label>Dein Name: <input id="username" /></label><br/>
+    <label>Code (leer für neu): <input id="codeInput" maxlength="5" /></label><br/>
+    <button id="btnLogin">Einloggen</button>
+    <div id="loginStatus"></div>
+  </div>
+
+  <div id="mainMenu" style="display:none;">
+    <button id="btnCreateLobby">Lobby erstellen</button>
+    <button id="btnInvitations">Einladungen ansehen</button>
+    <div id="currentCode"></div>
+  </div>
+
+  <div id="invitationsMenu" style="display:none;">
+    <h3>Einladungen</h3>
+    <ul id="invitationList"></ul>
+    <button id="btnBackInvitations">Zurück</button>
+  </div>
+
+  <div id="lobby" style="display:none;">
+    <h3>Lobby <span id="lobbyCode"></span></h3>
+    <div>Host: <span id="hostName"></span></div>
+    <div>Spieler:</div>
+    <ul id="playerList"></ul>
+
+    <div>
+      <h4>Map wählen</h4>
+      <button class="mapBtn" data-map="Map1">Map 1</button>
+      <button class="mapBtn" data-map="Map2">Map 2</button>
+      <button class="mapBtn" data-map="Map3">Map 3</button>
+    </div>
+
+    <div>
+      <h4>Farbe wählen</h4>
+      <button class="colorBtn" data-color="Rot" style="background:#f00;">Rot</button>
+      <button class="colorBtn" data-color="Grün" style="background:#0f0;">Grün</button>
+      <button class="colorBtn" data-color="Blau" style="background:#00f;">Blau</button>
+      <button class="colorBtn" data-color="Gelb" style="background:#ff0;">Gelb</button>
+    </div>
+
+    <div>
+      <button id="btnStartGame">Spiel starten</button>
+    </div>
+
+    <div id="lobbyStatus"></div>
+    <button id="btnLeaveLobby">Lobby verlassen</button>
+  </div>
+
+  <div id="game" style="display:none;">
+    <h3>Spiel: <span id="gameMap"></span></h3>
+    <div>Du bist dran: <span id="currentTurn"></span></div>
+    <div>Deine Farbe: <span id="yourColor"></span></div>
+    <button id="btnRollDice">Würfeln (1-6)</button>
+    <div id="rollResult"></div>
+
+    <div id="minigame" style="display:none;">
+      <h4>Minispiel: Guess the Number</h4>
+      <p>Rate eine Zahl von 1 bis 10:</p>
+      <input type="number" id="guessInput" min="1" max="10"/>
+      <button id="btnSubmitGuess">Rate</button>
+      <div id="minigameStatus"></div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>

@@ -1,50 +1,53 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Labyrinth Tycoon</title>
-<style>
-  body {
-    background: #222;
-    color: #eee;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 0; padding: 20px;
-  }
-  #points {
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-  }
-  #maze {
-    display: grid;
-    margin: 0 auto;
-    border: 3px solid #90ee90;
-    user-select: none;
-    max-width: 95vw;
-    max-height: 80vh;
-  }
-  .cell {
-    border: 1px solid #555;
-    box-sizing: border-box;
-  }
-  .wall {
-    background-color: black;
-  }
-  .start {
-    background-color: green;
-  }
-  .end {
-    background-color: red;
-  }
-  .player {
-    background-color: yellow;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Labyrinth Forever</title>
+  <style>
+    body {
+      background: #222;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      overflow: hidden;
+    }
+    #points {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+    #maze {
+      display: grid;
+      margin: 0 auto;
+      border: 3px solid #90ee90;
+      user-select: none;
+      touch-action: none;
+      max-width: 95vw;
+      max-height: 80vh;
+    }
+    .cell {
+      border: 1px solid #555;
+      box-sizing: border-box;
+    }
+    .wall {
+      background-color: black;
+    }
+    .start {
+      background-color: green;
+    }
+    .end {
+      background-color: red;
+    }
+    .player {
+      background-color: yellow;
+    }
+  </style>
 </head>
 <body>
 
-<h1>Labyrinth Tycoon - Grundversion</h1>
+<h1>Labyrinth Tycoon</h1>
 <div id="points">Punkte: 0</div>
 <div id="maze"></div>
 

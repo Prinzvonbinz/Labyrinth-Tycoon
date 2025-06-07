@@ -2,65 +2,46 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Labyrinth Tycoon</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app">
-    <!-- Code-Eingabe -->
-    <div id="codeScreen" class="screen">
-      <h1>Labyrinth Tycoon</h1>
-      <p>Gib deinen Account-Code ein:</p>
-      <input type="text" id="codeInput" placeholder="z. B. LAB-1234-ABCD" maxlength="20"/>
-      <button onclick="enterCode()">Los geht's</button>
-    </div>
-
-    <!-- Hauptmenü -->
-    <div id="mainMenu" class="screen hidden">
-      <h2>Willkommen, <span id="codeDisplay"></span></h2>
-      <button onclick="startGame()">Spiel starten</button>
-      <button onclick="showStats()">Statistiken</button>
-      <button onclick="showMazeBuilder()">Maze Baumeister 🧱</button>
-      <button onclick="changeDevice()">Gerät ändern</button>
-    </div>
-
-    <!-- Spielfeld -->
-    <div id="gameScreen" class="screen hidden">
-      <div id="mazeContainer"></div>
-      <div id="gameUI">
-        <p>Punkte: <span id="scoreDisplay">0</span></p>
-        <p id="bonusInfo"></p>
-        <button onclick="backToMenu()">Zurück</button>
-      </div>
-    </div>
-
-    <!-- Statistiken -->
-    <div id="statsScreen" class="screen hidden">
-      <h2>Statistiken</h2>
-      <ul>
-        <li>Punkte: <span id="statsPoints">0</span></li>
-        <li>Größtes Labyrinth: <span id="statsSize">5×5</span></li>
-        <li>Gelöste Labyrinthe: <span id="statsSolved">0</span></li>
-        <li>Gescheiterte Bonuslevel: <span id="statsBonusFailed">0</span></li>
-        <li>Durchschnittliche Zeit: <span id="statsAvgTime">0s</span></li>
-        <li>Gerät: <span id="statsDevice">PC</span></li>
-      </ul>
-      <button onclick="backToMenu()">Zurück</button>
-    </div>
-
-    <!-- Maze Baumeister -->
-    <div id="builderScreen" class="screen hidden">
-      <h2>Maze Baumeister 🧱</h2>
-      <div id="builderControls">
-        <button onclick="saveMaze()">Maze speichern</button>
-        <button onclick="loadMaze()">Maze spielen</button>
-        <input type="text" id="mazeCodeInput" placeholder="MAZE-XXXX"/>
-        <button onclick="backToMenu()">Zurück</button>
-      </div>
-      <div id="builderGrid"></div>
-    </div>
+  <div id="menu" class="screen">
+    <h1>Labyrinth Tycoon</h1>
+    <button id="startGameBtn">Spiel starten</button>
+    <button id="statsBtn">Statistiken</button>
+    <button id="startBuilderBtn">Maze-Baumeister</button>
+    <label for="deviceSelect">Gerät:
+      <select id="deviceSelect">
+        <option value="PC">PC</option>
+        <option value="Touch">Touch</option>
+      </select>
+    </label>
   </div>
+
+  <div id="game" class="screen hidden">
+    <div id="mazeContainer"></div>
+    <div class="info">Punkte: <span id="scoreDisplay">0</span></div>
+    <button id="backToMenu">Zurück</button>
+  </div>
+
+  <div id="stats" class="screen hidden">
+    <h2>Statistiken</h2>
+    <p>Punkte: <span id="statScore">0</span></p>
+    <p>Gelöste Labyrinthe: <span id="statSolved">0</span></p>
+    <p>Fehlversuche (Bonus): <span id="statFails">0</span></p>
+    <p>Bewegungen insgesamt: <span id="statMoves">0</span></p>
+    <p>Gerät: <span id="statDevice">PC</span></p>
+    <button id="backFromStats">Zurück</button>
+  </div>
+
+  <div id="builder" class="screen hidden">
+    <h2>Maze-Baumeister</h2>
+    <div id="builderContainer"></div>
+    <button id="startBuilderGame">Starten</button>
+    <button id="backFromBuilder">Zurück</button>
+  </div>
+
   <script src="main.js"></script>
 </body>
 </html>
